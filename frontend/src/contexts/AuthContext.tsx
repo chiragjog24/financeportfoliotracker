@@ -1,20 +1,11 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
-import {
-  signIn as amplifySignIn,
-  signOut as amplifySignOut,
-  signUp as amplifySignUp,
-  confirmSignUp as amplifyConfirmSignUp,
-  resetPassword as amplifyResetPassword,
-  confirmResetPassword as amplifyConfirmResetPassword,
-  getCurrentUser,
-  fetchAuthSession,
-} from 'aws-amplify/auth'
+import { authService } from '@/services/auth'
 import type {
   SignInInput,
   SignUpInput,
-  ConfirmSignUpInput,
-  ForgotPasswordInput,
-  ConfirmForgotPasswordInput,
+  PasswordResetRequestInput,
+  PasswordResetConfirmInput,
+  RefreshTokenInput,
   User,
   AuthState,
 } from '@/types/auth'
@@ -22,12 +13,12 @@ import type {
 interface AuthContextType extends AuthState {
   signIn: (input: SignInInput) => Promise<void>
   signUp: (input: SignUpInput) => Promise<void>
-  confirmSignUp: (input: ConfirmSignUpInput) => Promise<void>
   signOut: () => Promise<void>
-  forgotPassword: (input: ForgotPasswordInput) => Promise<void>
-  confirmForgotPassword: (input: ConfirmForgotPasswordInput) => Promise<void>
+  forgotPassword: (input: PasswordResetRequestInput) => Promise<void>
+  confirmForgotPassword: (input: PasswordResetConfirmInput) => Promise<void>
   refreshAuth: () => Promise<void>
-  getAccessToken: () => Promise<string | null>
+  getAccessToken: () => string | null
+  refreshAccessToken: () => Promise<string | null>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -38,40 +29,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const extractUserFromSession = useCallback(async (): Promise<User | null> => {
-    try {
-      const currentUser = await getCurrentUser()
-      const session = await fetchAuthSession()
-      
-      if (session.tokens?.idToken) {
-        const idToken = session.tokens.idToken
-        const payload = idToken.payload as Record<string, unknown>
-        
-        return {
-          sub: payload.sub as string,
-          email: payload.email as string | undefined,
-          username: payload['cognito:username'] as string | undefined,
-          groups: (payload['cognito:groups'] as string[]) || [],
-        }
-      }
-      return null
-    } catch {
-      return null
-    }
-  }, [])
-
   const refreshAuth = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
-      const currentUser = await extractUserFromSession()
       
-      if (currentUser) {
-        setUser(currentUser)
-        setIsAuthenticated(true)
-      } else {
+      const accessToken = authService.getAccessToken()
+      if (!accessToken) {
         setUser(null)
         setIsAuthenticated(false)
+        return
+      }
+
+      // Try to get current user
+      try {
+        const currentUser = await authService.getCurrentUser()
+        setUser(currentUser)
+        setIsAuthenticated(true)
+      } catch (err) {
+        // Token might be expired, try to refresh
+        const refreshToken = authService.getRefreshToken()
+        if (refreshToken) {
+          try {
+            const tokens = await authService.refreshToken({ refresh_token: refreshToken })
+            authService.setTokens(tokens.access_token, tokens.refresh_token)
+            const currentUser = await authService.getCurrentUser()
+            setUser(currentUser)
+            setIsAuthenticated(true)
+          } catch {
+            // Refresh failed, clear tokens
+            authService.clearTokens()
+            setUser(null)
+            setIsAuthenticated(false)
+          }
+        } else {
+          authService.clearTokens()
+          setUser(null)
+          setIsAuthenticated(false)
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to refresh authentication')
@@ -80,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false)
     }
-  }, [extractUserFromSession])
+  }, [])
 
   useEffect(() => {
     refreshAuth()
@@ -90,7 +85,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true)
       setError(null)
-      await amplifySignIn({ username: input.username, password: input.password })
+      const tokens = await authService.login(input)
+      authService.setTokens(tokens.access_token, tokens.refresh_token)
       await refreshAuth()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Sign in failed'
@@ -105,35 +101,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true)
       setError(null)
-      await amplifySignUp({
-        username: input.username,
-        password: input.password,
-        options: {
-          userAttributes: {
-            email: input.email,
-          },
-        },
-      })
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Sign up failed'
-      setError(errorMessage)
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const confirmSignUp = async (input: ConfirmSignUpInput) => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      await amplifyConfirmSignUp({
-        username: input.username,
-        confirmationCode: input.confirmationCode,
-      })
+      const tokens = await authService.register(input)
+      authService.setTokens(tokens.access_token, tokens.refresh_token)
       await refreshAuth()
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Confirmation failed'
+      const errorMessage = err instanceof Error ? err.message : 'Sign up failed'
       setError(errorMessage)
       throw err
     } finally {
@@ -145,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true)
       setError(null)
-      await amplifySignOut()
+      authService.clearTokens()
       setUser(null)
       setIsAuthenticated(false)
     } catch (err) {
@@ -157,11 +129,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const forgotPassword = async (input: ForgotPasswordInput) => {
+  const forgotPassword = async (input: PasswordResetRequestInput) => {
     try {
       setIsLoading(true)
       setError(null)
-      await amplifyResetPassword({ username: input.username })
+      await authService.requestPasswordReset(input)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Password reset failed'
       setError(errorMessage)
@@ -171,15 +143,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const confirmForgotPassword = async (input: ConfirmForgotPasswordInput) => {
+  const confirmForgotPassword = async (input: PasswordResetConfirmInput) => {
     try {
       setIsLoading(true)
       setError(null)
-      await amplifyConfirmResetPassword({
-        username: input.username,
-        confirmationCode: input.confirmationCode,
-        newPassword: input.newPassword,
-      })
+      await authService.confirmPasswordReset(input)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Password confirmation failed'
       setError(errorMessage)
@@ -189,11 +157,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const getAccessToken = async (): Promise<string | null> => {
+  const getAccessToken = (): string | null => {
+    return authService.getAccessToken()
+  }
+
+  const refreshAccessToken = async (): Promise<string | null> => {
     try {
-      const session = await fetchAuthSession()
-      return session.tokens?.accessToken?.toString() || null
+      const refreshToken = authService.getRefreshToken()
+      if (!refreshToken) {
+        return null
+      }
+
+      const tokens = await authService.refreshToken({ refresh_token: refreshToken })
+      authService.setTokens(tokens.access_token, tokens.refresh_token)
+      return tokens.access_token
     } catch {
+      authService.clearTokens()
+      setUser(null)
+      setIsAuthenticated(false)
       return null
     }
   }
@@ -205,12 +186,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error,
     signIn,
     signUp,
-    confirmSignUp,
     signOut,
     forgotPassword,
     confirmForgotPassword,
     refreshAuth,
     getAccessToken,
+    refreshAccessToken,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -15,10 +15,7 @@ services:
       - ENVIRONMENT=development
       - API_V1_PREFIX=/api/v1
       - CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]
-      - AWS_REGION=${AWS_REGION:-us-east-1}
-      - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID:-}
-      - COGNITO_APP_CLIENT_ID=${COGNITO_APP_CLIENT_ID:-}
-      - COGNITO_DOMAIN=${COGNITO_DOMAIN:-}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production}
       - API_KEYS=${API_KEYS:-[]}
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/portfolio_tracker
       - LOG_LEVEL=DEBUG
@@ -48,6 +45,7 @@ services:
       - DEBUG=true
       - ENVIRONMENT=development
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/portfolio_tracker
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production}
       - LOG_LEVEL=DEBUG
       - LOG_FORMAT=console
     env_file:

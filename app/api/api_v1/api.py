@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.api_v1.endpoints import auth, health
+from app.api.api_v1.endpoints import auth_local, health
 
 api_router = APIRouter()
 
@@ -10,7 +10,7 @@ api_router.include_router(
 )
 
 api_router.include_router(
-    auth.router,
+    auth_local.router,
     prefix="/auth",
     tags=["Authentication"],
 )

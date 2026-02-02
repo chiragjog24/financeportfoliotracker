@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function ForgotPassword() {
+  const navigate = useNavigate()
   const { forgotPassword, confirmForgotPassword, isLoading, error } = useAuth()
   const [formError, setFormError] = useState<string | null>(null)
-  const [username, setUsername] = useState('')
-  const [codeSent, setCodeSent] = useState(false)
-  const [confirmationCode, setConfirmationCode] = useState('')
+  const [email, setEmail] = useState('')
+  const [tokenReceived, setTokenReceived] = useState(false)
+  const [resetToken, setResetToken] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
@@ -20,8 +21,14 @@ export default function ForgotPassword() {
     setFormError(null)
 
     try {
-      await forgotPassword({ username })
-      setCodeSent(true)
+      const result = await forgotPassword({ email })
+      // In development, the token is returned directly
+      if (result.token) {
+        setResetToken(result.token)
+        setTokenReceived(true)
+      } else {
+        setFormError('Reset token not received. Check your email or contact support.')
+      }
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Failed to send reset code')
     }
@@ -43,25 +50,23 @@ export default function ForgotPassword() {
 
     try {
       await confirmForgotPassword({
-        username,
-        confirmationCode,
-        newPassword,
+        token: resetToken,
+        new_password: newPassword,
       })
-      // Redirect to sign in after successful reset
-      window.location.href = '/signin'
+      navigate('/signin', { state: { message: 'Password reset successfully. Please sign in.' } })
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Failed to reset password')
     }
   }
 
-  if (codeSent) {
+  if (tokenReceived) {
     return (
       <div className="container mx-auto py-10 flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Reset Password</CardTitle>
             <CardDescription>
-              Enter the confirmation code sent to your email and your new password
+              Enter your new password below
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -71,18 +76,6 @@ export default function ForgotPassword() {
                   {error || formError}
                 </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="code">Confirmation Code</Label>
-                <Input
-                  id="code"
-                  type="text"
-                  placeholder="Enter 6-digit code"
-                  value={confirmationCode}
-                  onChange={(e) => setConfirmationCode(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="newPassword">New Password</Label>
                 <Input
@@ -130,7 +123,7 @@ export default function ForgotPassword() {
         <CardHeader>
           <CardTitle>Forgot Password</CardTitle>
           <CardDescription>
-            Enter your username or email to receive a password reset code
+            Enter your email to receive a password reset token
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -141,19 +134,19 @@ export default function ForgotPassword() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="username">Username or Email</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                type="text"
-                placeholder="username@example.com"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="user@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Sending code...' : 'Send Reset Code'}
+              {isLoading ? 'Sending token...' : 'Send Reset Token'}
             </Button>
             <div className="text-center text-sm">
               <Link to="/signin" className="text-primary hover:underline">
