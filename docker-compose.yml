@@ -79,5 +79,23 @@ services:
       retries: 5
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: portfolio-tracker-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api/v1
+    command: npm run dev
+    profiles:
+      - dev
+    depends_on:
+      - api
+
 volumes:
   postgres_data:
