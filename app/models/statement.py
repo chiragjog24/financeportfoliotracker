@@ -15,7 +15,7 @@ class UploadSession(BaseModel, table=True):
     
     __tablename__ = "upload_sessions"
     
-    user_id: str = Field(index=True, nullable=False, description="Cognito user sub (user identifier)")
+    user_id: str = Field(index=True, nullable=False, description="User ID (UUID)")
     status: UploadSessionStatus = Field(
         default=UploadSessionStatus.PENDING,
         nullable=False,
@@ -52,7 +52,7 @@ class Statement(BaseModel, table=True):
         index=True,
         description="Reference to the upload session"
     )
-    user_id: str = Field(index=True, nullable=False, description="Cognito user sub")
+    user_id: str = Field(index=True, nullable=False, description="User ID (UUID)")
     file_name: str = Field(nullable=False, description="Original filename")
     file_size_bytes: int = Field(nullable=False, description="File size in bytes")
     statement_type: StatementType = Field(nullable=False, description="Type of statement")
@@ -103,7 +103,7 @@ class ParsedTransaction(BaseModel, table=True):
         index=True,
         description="Reference to the statement"
     )
-    user_id: str = Field(index=True, nullable=False, description="Cognito user sub")
+    user_id: str = Field(index=True, nullable=False, description="User ID (UUID)")
     transaction_type: TransactionType = Field(nullable=False, description="Type of transaction")
     transaction_date: datetime = Field(nullable=False, index=True, description="Date of transaction")
     security_name: Optional[str] = Field(

@@ -26,12 +26,6 @@ class Settings(BaseSettings):
     cors_allow_methods: List[str] = ["*"]
     cors_allow_headers: List[str] = ["*"]
 
-    # AWS Cognito
-    aws_region: str = "us-east-1"
-    cognito_user_pool_id: str = ""
-    cognito_app_client_id: str = ""
-    cognito_domain: str = ""
-
     # API Keys
     api_key_header: str = "X-API-Key"
     api_keys: List[str] = []
@@ -47,13 +41,12 @@ class Settings(BaseSettings):
     database_max_overflow: int = 10
     database_pool_recycle: int = 3600
 
-    @property
-    def cognito_jwks_url(self) -> str:
-        return f"https://cognito-idp.{self.aws_region}.amazonaws.com/{self.cognito_user_pool_id}/.well-known/jwks.json"
+    # JWT Authentication
+    jwt_secret_key: str = ""
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 30
+    jwt_refresh_token_expire_days: int = 7
 
-    @property
-    def cognito_issuer(self) -> str:
-        return f"https://cognito-idp.{self.aws_region}.amazonaws.com/{self.cognito_user_pool_id}"
 
 
 @lru_cache

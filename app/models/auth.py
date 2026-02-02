@@ -15,6 +15,7 @@ class UserInfo(BaseModel):
     email: Optional[EmailStr] = None
     username: Optional[str] = None
     groups: List[str] = []
+    full_name: Optional[str] = None
 
 
 class TokenValidationResponse(BaseModel):
@@ -38,7 +39,37 @@ class DetailedHealthResponse(BaseModel):
     status: str
     version: str
     environment: str
-    cognito_configured: bool
+    jwt_configured: bool
     api_keys_configured: bool
     database_configured: bool
     database_connected: bool
+
+
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: Optional[str] = None
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str

@@ -12,7 +12,7 @@ export default function SignIn() {
   const { signIn, isLoading, error } = useAuth()
   const [formError, setFormError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
   })
 
@@ -24,7 +24,7 @@ export default function SignIn() {
 
     try {
       await signIn({
-        username: formData.username,
+        email: formData.email,
         password: formData.password,
       })
       navigate(from, { replace: true })
@@ -48,13 +48,13 @@ export default function SignIn() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="username">Username or Email</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                type="text"
-                placeholder="username@example.com"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                id="email"
+                type="email"
+                placeholder="user@example.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
                 disabled={isLoading}
               />

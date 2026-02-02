@@ -11,6 +11,7 @@ from app.models.enums import (
     StatementType,
     TransactionType,
 )
+from app.models.user import User
 
 __all__ = [
     "UploadSession",
@@ -20,4 +21,5 @@ __all__ = [
     "UploadSessionStatus",
     "StatementType",
     "TransactionType",
+    "User",
 ]

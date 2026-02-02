@@ -16,7 +16,7 @@ interface UseApiReturn<T> {
 }
 
 export function useApi<T = unknown>(options: UseApiOptions = {}): UseApiReturn<T> {
-  const { getAccessToken, isAuthenticated, refreshAuth } = useAuth()
+  const { getAccessToken, refreshAccessToken, isAuthenticated } = useAuth()
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
@@ -30,11 +30,10 @@ export function useApi<T = unknown>(options: UseApiOptions = {}): UseApiReturn<T
         // Get access token if authentication is required
         let token: string | null = null
         if (!options.skipAuth && isAuthenticated) {
-          token = await getAccessToken()
+          token = getAccessToken()
           if (!token) {
-            // Try to refresh auth if token is missing
-            await refreshAuth()
-            token = await getAccessToken()
+            // Try to refresh token if missing
+            token = await refreshAccessToken()
           }
         }
 
@@ -78,9 +77,7 @@ export function useApi<T = unknown>(options: UseApiOptions = {}): UseApiReturn<T
           if (response.status === 401) {
             // Token might be expired, try to refresh
             if (!options.skipAuth && isAuthenticated) {
-              await refreshAuth()
-              // Retry once after refresh
-              const retryToken = await getAccessToken()
+              const retryToken = await refreshAccessToken()
               if (retryToken) {
                 headers['Authorization'] = `Bearer ${retryToken}`
                 const retryResponse = await fetch(`${API_BASE_URL}${url}`, {
@@ -125,7 +122,7 @@ export function useApi<T = unknown>(options: UseApiOptions = {}): UseApiReturn<T
         setLoading(false)
       }
     },
-    [getAccessToken, isAuthenticated, refreshAuth, options.skipAuth]
+    [getAccessToken, refreshAccessToken, isAuthenticated, options.skipAuth]
   )
 
   const reset = useCallback(() => {

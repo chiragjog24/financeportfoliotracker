@@ -9,14 +9,14 @@ from app.core.dependencies import (
     OptionalUserDep,
     SettingsDep,
 )
-from app.services.auth import AuthService, get_auth_service
+from app.services.user import UserService, get_user_service
 
-AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 
 __all__ = [
     "AdminUserDep",
     "ApiKeyDep",
-    "AuthServiceDep",
+    "UserServiceDep",
     "CurrentUserDep",
     "OptionalUserDep",
     "SettingsDep",

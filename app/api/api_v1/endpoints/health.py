@@ -35,9 +35,7 @@ async def detailed_health_check() -> DetailedHealthResponse:
         status="healthy" if db_connected or not settings.database_url else "degraded",
         version=settings.app_version,
         environment=settings.environment,
-        cognito_configured=bool(
-            settings.cognito_user_pool_id and settings.cognito_app_client_id
-        ),
+        jwt_configured=bool(settings.jwt_secret_key),
         api_keys_configured=bool(settings.api_keys),
         database_configured=bool(settings.database_url),
         database_connected=db_connected,

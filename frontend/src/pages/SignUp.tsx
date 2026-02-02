@@ -8,16 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export default function SignUp() {
   const navigate = useNavigate()
-  const { signUp, confirmSignUp, isLoading, error } = useAuth()
+  const { signUp, isLoading, error } = useAuth()
   const [formError, setFormError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     password: '',
     confirmPassword: '',
+    fullName: '',
   })
-  const [needsConfirmation, setNeedsConfirmation] = useState(false)
-  const [confirmationCode, setConfirmationCode] = useState('')
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -35,68 +33,14 @@ export default function SignUp() {
 
     try {
       await signUp({
-        username: formData.username,
         email: formData.email,
         password: formData.password,
+        full_name: formData.fullName || undefined,
       })
-      setNeedsConfirmation(true)
+      navigate('/', { replace: true })
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Sign up failed')
     }
-  }
-
-  const handleConfirm = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setFormError(null)
-
-    try {
-      await confirmSignUp({
-        username: formData.username,
-        confirmationCode,
-      })
-      navigate('/signin', { state: { message: 'Account confirmed. Please sign in.' } })
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Confirmation failed')
-    }
-  }
-
-  if (needsConfirmation) {
-    return (
-      <div className="container mx-auto py-10 flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Confirm Your Account</CardTitle>
-            <CardDescription>
-              We've sent a confirmation code to {formData.email}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleConfirm} className="space-y-4">
-              {formError && (
-                <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-                  {formError}
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="code">Confirmation Code</Label>
-                <Input
-                  id="code"
-                  type="text"
-                  placeholder="Enter 6-digit code"
-                  value={confirmationCode}
-                  onChange={(e) => setConfirmationCode(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Confirming...' : 'Confirm'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    )
   }
 
   return (
@@ -114,18 +58,6 @@ export default function SignUp() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="johndoe"
-                value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -134,6 +66,17 @@ export default function SignUp() {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name (Optional)</Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="John Doe"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 disabled={isLoading}
               />
             </div>
