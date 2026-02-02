@@ -35,7 +35,8 @@ A full-stack application for tracking and managing investment portfolios.
    ```
 
 2. Set up environment variables:
-   Create a `.env` file in the root directory with:
+   Create a `.env` file in the root directory. See `.env.example` for all available configuration options.
+   Minimum required for local development:
    ```
    DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/portfolio_tracker
    AWS_REGION=us-east-1
@@ -43,17 +44,49 @@ A full-stack application for tracking and managing investment portfolios.
    COGNITO_APP_CLIENT_ID=your_client_id
    ```
 
-3. Run database migrations:
+3. Start the local PostgreSQL database:
+   ```bash
+   docker-compose up -d db
+   ```
+   The database will be available at `localhost:5432` with:
+   - Username: `postgres`
+   - Password: `postgres`
+   - Database: `portfolio_tracker`
+
+4. Run database migrations:
    ```bash
    alembic upgrade head
    ```
 
-4. Start the API server:
+5. Start the API server:
    ```bash
    uvicorn app.main:app --reload
    ```
 
 The API will be available at `http://localhost:8000` with docs at `http://localhost:8000/api/v1/docs`.
+
+#### Database Management
+
+**Reset the local database:**
+```bash
+./scripts/db-reset.sh
+```
+This script stops the database, removes all data, and restarts it with a fresh instance.
+
+**Stop the database:**
+```bash
+docker-compose stop db
+```
+
+**View database logs:**
+```bash
+docker-compose logs -f db
+```
+
+**Connect to the database directly:**
+```bash
+docker-compose exec db psql -U postgres -d portfolio_tracker
+```
 
 ### Frontend Setup
 

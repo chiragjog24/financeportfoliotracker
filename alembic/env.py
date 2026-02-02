@@ -10,6 +10,10 @@ from alembic import context
 
 from app.core.config import get_settings
 
+# Import all models to register them with SQLModel.metadata
+from app.models import *  # noqa: F401, F403
+from app.db.base import BaseModel  # noqa: F401
+
 config = context.config
 
 if config.config_file_name is not None:
