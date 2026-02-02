@@ -33,8 +33,7 @@ class UploadSession(BaseModel, table=True):
     )
     error_message: Optional[str] = Field(
         default=None,
-        nullable=True,
-        sa_column=Column(Text),
+        sa_column=Column(Text, nullable=True),
         description="Error message if session failed"
     )
     
